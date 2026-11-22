@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // An admin is any signed-in user whose UID has a document in /admins.
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function shortText(v, max) {
+      return v is string && v.size() > 0 && v.size() <= max;
+    }
+
+    match /drivers/{driverId} {
+      // Anyone with the link can submit a registration, but cannot read any.
+      allow create: if
+        request.resource.data.keys().hasOnly([
+          'firstName', 'lastName', 'fatherName', 'birthDate', 'birthPlace',
+          'currentAddress', 'phone', 'email', 'serviceType', 'lang',
+          'status', 'createdAt'])
+        && shortText(request.resource.data.firstName, 60)
+        && shortText(request.resource.data.lastName, 60)
+        && shortText(request.resource.data.fatherName, 60)
+        && request.resource.data.birthDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && shortText(request.resource.data.birthPlace, 120)
+        && shortText(request.resource.data.currentAddress, 200)
+        && request.resource.data.phone.matches('^[+]?[0-9]{7,15}$')
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 120
+        && request.resource.data.serviceType in ['taxi', 'delivery', 'both']
+        && request.resource.data.lang in ['ar', 'en']
+        && request.resource.data.status == 'new'
+        && request.resource.data.createdAt == request.time;
+
+      allow read, delete: if isAdmin();
+      // Admins may only change the review status.
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.resource.data.status in ['new', 'approved', 'rejected'];
+
+      // The three photos, stored as compressed JPEG data URLs.
+      match /files/{fileId} {
+        allow create: if
+          fileId in ['idPhoto', 'licensePhoto', 'selfie']
+          && request.resource.data.keys().hasOnly(['data', 'createdAt'])
+          && request.resource.data.data is string
+          && request.resource.data.data.matches('^data:image/jpeg;base64,.*')
+          && request.resource.data.data.size() < 1000000
+          && request.resource.data.createdAt == request.time;
+        allow read, delete: if isAdmin();
+      }
+    }
+
+    // Admin list is managed by hand in the Firebase console only.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

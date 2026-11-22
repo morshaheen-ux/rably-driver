@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>لوحة الإدارة | Admin</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap wide">
+  <header class="top">
+    <h1 data-i18n="title"></h1>
+    <div class="row">
+      <button type="button" class="btn small hidden" id="logoutBtn" data-i18n="logout"></button>
+      <button type="button" class="btn small" id="langBtn"></button>
+    </div>
+  </header>
+
+  <div id="msg" class="banner error hidden" role="alert"></div>
+
+  <!-- Sign in -->
+  <main id="loginView" class="card hidden" style="max-width:420px;margin-inline:auto">
+    <h2 data-i18n="signIn"></h2>
+    <form id="loginForm" class="grid">
+      <label class="field"><span data-i18n="email"></span>
+        <input type="email" name="email" class="ltr" required autocomplete="username"></label>
+      <label class="field"><span data-i18n="password"></span>
+        <input type="password" name="password" class="ltr" required autocomplete="current-password"></label>
+      <button type="submit" class="btn primary" data-i18n="signIn"></button>
+    </form>
+  </main>
+
+  <!-- List -->
+  <main id="listView" class="card hidden">
+    <div class="toolbar">
+      <input type="search" id="search">
+      <select id="statusFilter">
+        <option value="" data-i18n="allStatuses"></option>
+        <option value="new" data-i18n="st_new"></option>
+        <option value="approved" data-i18n="st_approved"></option>
+        <option value="rejected" data-i18n="st_rejected"></option>
+      </select>
+      <button type="button" class="btn small" id="refreshBtn" data-i18n="refresh"></button>
+      <button type="button" class="btn small" id="csvBtn" data-i18n="exportCsv"></button>
+    </div>
+    <p class="sub" id="count"></p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="colName"></th><th data-i18n="colService"></th><th data-i18n="phone"></th>
+          <th data-i18n="colDate"></th><th data-i18n="colStatus"></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Details -->
+  <main id="detailView" class="card hidden">
+    <button type="button" class="btn small" id="backBtn" data-i18n="back"></button>
+    <h2 id="dName" style="margin-top:14px"></h2>
+    <dl class="details" id="dFields"></dl>
+    <div class="photos" id="dPhotos"></div>
+    <div class="row">
+      <button type="button" class="btn primary" data-status="approved" data-i18n="approve"></button>
+      <button type="button" class="btn" data-status="rejected" data-i18n="reject"></button>
+      <button type="button" class="btn" data-status="new" data-i18n="markNew"></button>
+      <button type="button" class="btn danger" id="deleteBtn" data-i18n="delete"></button>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, query, orderBy, updateDoc, writeBatch }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const T = {
+  ar: {
+    title: "طلبات السائقين", signIn: "تسجيل الدخول", logout: "خروج",
+    email: "البريد الإلكتروني", password: "كلمة المرور",
+    searchPh: "بحث بالاسم أو الهاتف…", allStatuses: "كل الحالات",
+    st_new: "جديد", st_approved: "مقبول", st_rejected: "مرفوض",
+    refresh: "تحديث", exportCsv: "تصدير CSV", count: n => `عدد الطلبات: ${n}`,
+    colName: "الاسم", colService: "الخدمة", colDate: "تاريخ الطلب", colStatus: "الحالة",
+    taxi: "تكسي", delivery: "توصيل", both: "الاثنان",
+    back: "→ رجوع للقائمة", approve: "قبول", reject: "رفض", markNew: "إعادة إلى جديد", delete: "حذف الطلب",
+    firstName: "الاسم", lastName: "الكنية", fatherName: "اسم الأب",
+    birthDate: "تاريخ الولادة", birthPlace: "مكان الولادة", currentAddress: "مكان الإقامة الحالي",
+    phone: "رقم الهاتف", idPhoto: "صورة الهوية", licensePhoto: "شهادة السواقة", selfie: "الصورة الشخصية",
+    confirmDelete: "حذف هذا الطلب وصوره نهائياً؟",
+    eLogin: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    eDenied: "هذا الحساب ليس لديه صلاحية الإدارة. أضف معرّف المستخدم (UID) إلى مجموعة admins.",
+    eLoad: "تعذّر تحميل البيانات. حاول مرة أخرى.",
+    eSetup: "لم يتم ربط Firebase بعد. عدّل الملف firebase-config.js.",
+    langBtn: "English"
+  },
+  en: {
+    title: "Driver applications", signIn: "Sign in", logout: "Sign out",
+    email: "Email", password: "Password",
+    searchPh: "Search by name or phone…", allStatuses: "All statuses",
+    st_new: "New", st_approved: "Approved", st_rejected: "Rejected",
+    refresh: "Refresh", exportCsv: "Export CSV", count: n => `Applications: ${n}`,
+    colName: "Name", colService: "Service", colDate: "Submitted", colStatus: "Status",
+    taxi: "Taxi", delivery: "Delivery", both: "Both",
+    back: "← Back to list", approve: "Approve", reject: "Reject", markNew: "Mark as new", delete: "Delete application",
+    firstName: "First name", lastName: "Surname", fatherName: "Father's name",
+    birthDate: "Date of birth", birthPlace: "Place of birth", currentAddress: "Current residence",
+    phone: "Phone number", idPhoto: "ID card", licensePhoto: "Driving licence", selfie: "Personal photo",
+    confirmDelete: "Permanently delete this application and its photos?",
+    eLogin: "Wrong email or password.",
+    eDenied: "This account has no admin access. Add its user ID (UID) to the admins collection.",
+    eLoad: "Could not load the data. Try again.",
+    eSetup: "Firebase is not connected yet. Edit firebase-config.js.",
+    langBtn: "العربية"
+  }
+};
+
+let lang = "ar";
+try { lang = localStorage.getItem("adminLang") === "en" ? "en" : "ar"; } catch {}
+const t = k => T[lang][k];
+const $ = s => document.querySelector(s);
+const el = (tag, text, cls) => {
+  const n = document.createElement(tag);
+  if (text != null) n.textContent = text;   // textContent only: driver input is untrusted
+  if (cls) n.className = cls;
+  return n;
+};
+
+let drivers = [];
+let current = null;
+let msgKey = null;
+
+function showMsg(key) {
+  msgKey = key;
+  $("#msg").textContent = key ? t(key) : "";
+  $("#msg").classList.toggle("hidden", !key);
+}
+function show(view) {
+  for (const v of ["loginView", "listView", "detailView"]) $("#" + v).classList.toggle("hidden", v !== view);
+}
+const fmtDate = ts => ts?.toDate ? ts.toDate().toLocaleString(lang === "ar" ? "ar-SY-u-nu-latn" : "en-GB", { dateStyle: "medium", timeStyle: "short" }) : "";
+const fullName = d => `${d.firstName || ""} ${d.lastName || ""}`.trim();
+
+function render() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach(n => { n.textContent = t(n.dataset.i18n); });
+  $("#langBtn").textContent = t("langBtn");
+  $("#search").placeholder = t("searchPh");
+  if (msgKey) $("#msg").textContent = t(msgKey);
+  renderList();
+  if (current) renderDetail(false);
+}
+
+function filtered() {
+  const q = $("#search").value.trim().toLowerCase();
+  const st = $("#statusFilter").value;
+  return drivers.filter(d =>
+    (!st || d.status === st) &&
+    (!q || `${d.firstName} ${d.lastName} ${d.fatherName} ${d.phone}`.toLowerCase().includes(q)));
+}
+function renderList() {
+  const list = filtered();
+  $("#count").textContent = T[lang].count(list.length);
+  const rows = $("#rows");
+  rows.replaceChildren();
+  for (const d of list) {
+    const tr = el("tr");
+    tr.tabIndex = 0;
+    tr.append(el("td", fullName(d)), el("td", t(d.serviceType) || d.serviceType));
+    tr.append(el("td", d.phone, "ltr"), el("td", fmtDate(d.createdAt)));
+    const td = el("td");
+    td.append(el("span", t("st_" + d.status) || d.status, "pill " + d.status));
+    tr.append(td);
+    const open = () => { current = d; renderDetail(true); show("detailView"); window.scrollTo(0, 0); };
+    tr.addEventListener("click", open);
+    tr.addEventListener("keydown", ev => { if (ev.key === "Enter") open(); });
+    rows.append(tr);
+  }
+}
+
+async function renderDetail(loadPhotos) {
+  const d = current;
+  $("#dName").textContent = fullName(d);
+  const dl = $("#dFields");
+  dl.replaceChildren();
+  const add = (label, value, ltr) => { dl.append(el("dt", label), el("dd", value || "—", ltr ? "ltr" : "")); };
+  add(t("firstName"), d.firstName); add(t("lastName"), d.lastName); add(t("fatherName"), d.fatherName);
+  add(t("birthDate"), d.birthDate, true); add(t("birthPlace"), d.birthPlace);
+  add(t("currentAddress"), d.currentAddress);
+  add(t("phone"), d.phone, true); add(t("email"), d.email, true);
+  add(t("colService"), t(d.serviceType) || d.serviceType);
+  add(t("colDate"), fmtDate(d.createdAt)); add(t("colStatus"), t("st_" + d.status) || d.status);
+
+  const keys = ["idPhoto", "licensePhoto", "selfie"];
+  const box = $("#dPhotos");
+  if (!loadPhotos) {       // language switch: only relabel
+    box.querySelectorAll("figcaption").forEach((c, i) => { c.textContent = t(keys[i]); });
+    return;
+  }
+  box.replaceChildren();
+  for (const k of keys) {
+    const fig = el("figure");
+    const img = el("img");
+    img.alt = t(k);
+    fig.append(img, el("figcaption", t(k)));
+    box.append(fig);
+    getDoc(doc(db, "drivers", d.id, "files", k)).then(snap => {
+      const data = snap.data()?.data;
+      // Only ever render JPEG data URLs produced by the form.
+      if (current === d && typeof data === "string" && data.startsWith("data:image/jpeg;base64,")) {
+        img.src = data;
+        img.style.cursor = "zoom-in";
+        img.addEventListener("click", () => {
+          const w = window.open();
+          if (w) { const big = w.document.createElement("img"); big.src = data; big.style.maxWidth = "100%"; w.document.body.append(big); }
+        });
+      }
+    }).catch(() => showMsg("eLoad"));
+  }
+}
+
+async function load() {
+  showMsg(null);
+  try {
+    const snap = await getDocs(query(collection(db, "drivers"), orderBy("createdAt", "desc")));
+    drivers = snap.docs.map(s => ({ id: s.id, ...s.data() }));
+    renderList();
+    show("listView");
+  } catch (err) {
+    console.error(err);
+    show("loginView");
+    showMsg(err.code === "permission-denied" ? "eDenied" : "eLoad");
+  }
+}
+
+function exportCsv() {
+  const cols = ["firstName", "lastName", "fatherName", "birthDate", "birthPlace", "currentAddress",
+                "phone", "email", "serviceType", "status"];
+  const cell = v => {
+    let s = String(v ?? "");
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;      // stop spreadsheet formula injection
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const lines = [[...cols, "createdAt", "id"].map(cell).join(",")];
+  for (const d of filtered()) {
+    lines.push([...cols.map(c => d[c]), d.createdAt?.toDate?.().toISOString() ?? "", d.id].map(cell).join(","));
+  }
+  const blob = new Blob(["﻿" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = el("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `drivers-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ---------- Wiring ----------
+$("#langBtn").addEventListener("click", () => {
+  lang = lang === "ar" ? "en" : "ar";
+  try { localStorage.setItem("adminLang", lang); } catch {}
+  render();
+});
+$("#search").addEventListener("input", renderList);
+$("#statusFilter").addEventListener("change", renderList);
+$("#csvBtn").addEventListener("click", exportCsv);
+$("#backBtn").addEventListener("click", () => { current = null; renderList(); show("listView"); });
+
+let db = null, auth = null;
+const configured = !String(firebaseConfig.apiKey || "").startsWith("YOUR_");
+if (!configured) {
+  show("loginView");
+  showMsg("eSetup");
+} else {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+
+  onAuthStateChanged(auth, user => {
+    $("#logoutBtn").classList.toggle("hidden", !user);
+    if (user) load(); else { drivers = []; current = null; show("loginView"); }
+  });
+  $("#loginForm").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    showMsg(null);
+    const f = new FormData(ev.target);
+    try { await signInWithEmailAndPassword(auth, f.get("email").trim(), f.get("password")); }
+    catch { showMsg("eLogin"); }
+  });
+  $("#logoutBtn").addEventListener("click", () => signOut(auth));
+  $("#refreshBtn").addEventListener("click", load);
+
+  document.querySelectorAll("[data-status]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (!current) return;
+      try {
+        await updateDoc(doc(db, "drivers", current.id), { status: btn.dataset.status });
+        current.status = btn.dataset.status;
+        renderDetail(false);
+      } catch { showMsg("eLoad"); }
+    });
+  });
+  $("#deleteBtn").addEventListener("click", async () => {
+    if (!current || !confirm(t("confirmDelete"))) return;
+    try {
+      const batch = writeBatch(db);
+      for (const k of ["idPhoto", "licensePhoto", "selfie"]) batch.delete(doc(db, "drivers", current.id, "files", k));
+      batch.delete(doc(db, "drivers", current.id));
+      await batch.commit();
+      drivers = drivers.filter(d => d !== current);
+      current = null;
+      renderList();
+      show("listView");
+    } catch { showMsg("eLoad"); }
+  });
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>تسجيل السائقين | Driver Registration</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1 data-i18n="title"></h1>
+    <button type="button" class="btn small" id="langBtn"></button>
+  </header>
+
+  <div id="setupWarn" class="banner warn hidden" data-i18n="setupWarn"></div>
+
+  <main id="formView">
+    <p class="sub" data-i18n="intro"></p>
+    <form id="form" novalidate>
+      <section class="card">
+        <h2 data-i18n="secService"></h2>
+        <div class="radios" id="serviceType">
+          <label><input type="radio" name="serviceType" value="taxi"> <span data-i18n="taxi"></span></label>
+          <label><input type="radio" name="serviceType" value="delivery"> <span data-i18n="delivery"></span></label>
+          <label><input type="radio" name="serviceType" value="both"> <span data-i18n="both"></span></label>
+        </div>
+        <div class="err" data-err="serviceType"></div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="secPersonal"></h2>
+        <div class="grid two">
+          <label class="field"><span data-i18n="firstName"></span>
+            <input type="text" name="firstName" maxlength="60" autocomplete="given-name">
+            <div class="err" data-err="firstName"></div></label>
+          <label class="field"><span data-i18n="lastName"></span>
+            <input type="text" name="lastName" maxlength="60" autocomplete="family-name">
+            <div class="err" data-err="lastName"></div></label>
+          <label class="field"><span data-i18n="fatherName"></span>
+            <input type="text" name="fatherName" maxlength="60">
+            <div class="err" data-err="fatherName"></div></label>
+          <label class="field"><span data-i18n="birthDate"></span>
+            <input type="date" name="birthDate" autocomplete="bday">
+            <div class="err" data-err="birthDate"></div></label>
+          <label class="field"><span data-i18n="birthPlace"></span>
+            <input type="text" name="birthPlace" maxlength="120">
+            <div class="err" data-err="birthPlace"></div></label>
+          <label class="field"><span data-i18n="currentAddress"></span>
+            <input type="text" name="currentAddress" maxlength="200" autocomplete="street-address">
+            <div class="err" data-err="currentAddress"></div></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="secContact"></h2>
+        <div class="grid two">
+          <label class="field"><span data-i18n="phone"></span>
+            <input type="tel" name="phone" class="ltr" inputmode="tel" maxlength="20" placeholder="+963 9XX XXX XXX" autocomplete="tel">
+            <div class="err" data-err="phone"></div></label>
+          <label class="field"><span><span data-i18n="email"></span> <span class="opt" data-i18n="optional"></span></span>
+            <input type="email" name="email" class="ltr" maxlength="120" placeholder="name@example.com" autocomplete="email">
+            <div class="err" data-err="email"></div></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="secPhotos"></h2>
+        <div class="grid">
+          <div class="photo" id="box-idPhoto">
+            <span class="label" data-i18n="idPhoto"></span>
+            <p class="hint" data-i18n="docHint"></p>
+            <img class="hidden" alt="">
+            <label class="btn"><span data-i18n="choosePhoto"></span>
+              <input type="file" accept="image/*" class="hidden" data-photo="idPhoto"></label>
+            <div class="err" data-err="idPhoto"></div>
+          </div>
+
+          <div class="photo" id="box-licensePhoto">
+            <span class="label" data-i18n="licensePhoto"></span>
+            <p class="hint" data-i18n="docHint"></p>
+            <img class="hidden" alt="">
+            <label class="btn"><span data-i18n="choosePhoto"></span>
+              <input type="file" accept="image/*" class="hidden" data-photo="licensePhoto"></label>
+            <div class="err" data-err="licensePhoto"></div>
+          </div>
+
+          <div class="photo" id="box-selfie">
+            <span class="label" data-i18n="selfie"></span>
+            <p class="hint" data-i18n="selfieHint"></p>
+            <video class="hidden" playsinline muted></video>
+            <img class="hidden" alt="">
+            <div class="row">
+              <button type="button" class="btn" id="camOpen" data-i18n="openCamera"></button>
+              <button type="button" class="btn primary hidden" id="camShoot" data-i18n="capture"></button>
+              <button type="button" class="btn hidden" id="camRetake" data-i18n="retake"></button>
+              <label class="btn hidden" id="camFallback"><span data-i18n="openCamera"></span>
+                <input type="file" accept="image/*" capture="user" class="hidden" data-photo="selfie"></label>
+            </div>
+            <div class="err" data-err="selfie"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <label class="consent">
+          <input type="checkbox" name="consent">
+          <span data-i18n="consent"></span>
+        </label>
+        <div class="err" data-err="consent"></div>
+      </section>
+
+      <div id="submitErr" class="banner error hidden" role="alert"></div>
+      <button type="submit" class="btn primary block" id="submitBtn" data-i18n="submit"></button>
+    </form>
+  </main>
+
+  <main id="doneView" class="card done hidden">
+    <div class="tick">✓</div>
+    <h2 data-i18n="doneTitle"></h2>
+    <p data-i18n="doneText"></p>
+    <p><span data-i18n="refLabel"></span> <strong class="ref" id="refId"></strong></p>
+  </main>
+</div>
+
+<script type="module">
+import { firebaseConfig } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getFirestore, collection, doc, writeBatch, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+const T = {
+  ar: {
+    title: "تسجيل السائقين",
+    intro: "املأ بياناتك وأرفق الصور المطلوبة. يستغرق ذلك حوالي ٣ دقائق.",
+    setupWarn: "لم يتم ربط النموذج بـ Firebase بعد. عدّل الملف firebase-config.js.",
+    secService: "نوع الخدمة", taxi: "تكسي", delivery: "توصيل", both: "الاثنان معاً",
+    secPersonal: "البيانات الشخصية",
+    firstName: "الاسم", lastName: "الكنية", fatherName: "اسم الأب",
+    birthDate: "تاريخ الولادة", birthPlace: "مكان الولادة",
+    currentAddress: "مكان الإقامة الحالي",
+    secContact: "بيانات التواصل", phone: "رقم الهاتف", email: "البريد الإلكتروني",
+    optional: "(اختياري)",
+    secPhotos: "الصور المطلوبة",
+    idPhoto: "صورة الهوية", licensePhoto: "صورة شهادة السواقة", selfie: "صورة شخصية مباشرة",
+    docHint: "صورة واضحة تُظهر كامل الوثيقة.",
+    selfieHint: "تُلتقط الآن بكاميرا الجهاز، والوجه واضح ومضاء.",
+    choosePhoto: "اختيار أو التقاط صورة", changePhoto: "تغيير الصورة",
+    openCamera: "فتح الكاميرا", capture: "التقاط", retake: "إعادة الالتقاط",
+    consent: "أوافق على حفظ بياناتي وصوري لغرض دراسة طلب انضمامي كسائق.",
+    submit: "إرسال الطلب", sending: "جارٍ الإرسال…",
+    doneTitle: "تم استلام طلبك",
+    doneText: "شكراً لك. سنراجع بياناتك ونتواصل معك على رقم الهاتف الذي أدخلته.",
+    refLabel: "رقم الطلب:",
+    eRequired: "هذا الحقل مطلوب.", eService: "اختر نوع الخدمة.",
+    eDate: "أدخل تاريخ ولادة صحيحاً (العمر ١٨ سنة على الأقل).",
+    ePhone: "أدخل رقم هاتف صحيحاً، مثال: ‎+963912345678",
+    eEmail: "البريد الإلكتروني غير صحيح.",
+    ePhoto: "هذه الصورة مطلوبة.", eImage: "تعذّرت قراءة الصورة. جرّب صورة أخرى.",
+    eConsent: "الموافقة مطلوبة لإرسال الطلب.",
+    eFix: "يوجد حقول ناقصة أو غير صحيحة. راجع الحقول المحددة بالأحمر.",
+    eSend: "تعذّر إرسال الطلب. تحقق من الاتصال بالإنترنت وحاول مرة أخرى.",
+    langBtn: "English"
+  },
+  en: {
+    title: "Driver Registration",
+    intro: "Fill in your details and attach the required photos. It takes about 3 minutes.",
+    setupWarn: "This form is not connected to Firebase yet. Edit firebase-config.js.",
+    secService: "Service type", taxi: "Taxi", delivery: "Delivery", both: "Both",
+    secPersonal: "Personal details",
+    firstName: "First name", lastName: "Surname", fatherName: "Father's name",
+    birthDate: "Date of birth", birthPlace: "Place of birth",
+    currentAddress: "Current place of residence",
+    secContact: "Contact details", phone: "Phone number", email: "Email",
+    optional: "(optional)",
+    secPhotos: "Required photos",
+    idPhoto: "Photo of ID card", licensePhoto: "Photo of driving licence", selfie: "Live personal photo",
+    docHint: "A clear photo showing the whole document.",
+    selfieHint: "Taken now with your device camera, face clear and well lit.",
+    choosePhoto: "Choose or take photo", changePhoto: "Change photo",
+    openCamera: "Open camera", capture: "Capture", retake: "Retake",
+    consent: "I agree to my details and photos being stored to review my application as a driver.",
+    submit: "Submit application", sending: "Sending…",
+    doneTitle: "Application received",
+    doneText: "Thank you. We will review your details and contact you on the phone number you entered.",
+    refLabel: "Reference:",
+    eRequired: "This field is required.", eService: "Choose a service type.",
+    eDate: "Enter a valid date of birth (you must be at least 18).",
+    ePhone: "Enter a valid phone number, e.g. +963912345678",
+    eEmail: "This email address is not valid.",
+    ePhoto: "This photo is required.", eImage: "Could not read that image. Try another one.",
+    eConsent: "You must agree before submitting.",
+    eFix: "Some fields are missing or invalid. Check the ones marked in red.",
+    eSend: "Could not send your application. Check your internet connection and try again.",
+    langBtn: "العربية"
+  }
+};
+
+let lang = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "ar";
+const t = k => T[lang][k];
+const $ = s => document.querySelector(s);
+const errors = {};          // field -> i18n key
+const photos = {};          // idPhoto / licensePhoto / selfie -> data URL
+
+function render() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $("#langBtn").textContent = t("langBtn");
+  for (const key of ["idPhoto", "licensePhoto"]) {
+    $(`#box-${key} label.btn span`).textContent = t(photos[key] ? "changePhoto" : "choosePhoto");
+  }
+  document.querySelectorAll("[data-err]").forEach(el => {
+    const k = errors[el.dataset.err];
+    el.textContent = k ? t(k) : "";
+  });
+  if (!$("#submitErr").classList.contains("hidden")) $("#submitErr").textContent = t($("#submitErr").dataset.key);
+}
+$("#langBtn").addEventListener("click", () => { lang = lang === "ar" ? "en" : "ar"; render(); });
+
+const configured = !String(firebaseConfig.apiKey || "").startsWith("YOUR_");
+$("#setupWarn").classList.toggle("hidden", configured);
+const db = configured ? getFirestore(initializeApp(firebaseConfig)) : null;
+
+// Latin digits for Arabic-Indic input, e.g. ٠٩١٢ -> 0912
+const toLatinDigits = s => s.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+
+// ---------- Photos ----------
+// Photos are shrunk in the browser and stored as JPEG data URLs in Firestore,
+// so each must stay well under Firestore's 1 MB document limit.
+const MAX_CHARS = 700000;
+function shrink(source, w, h) {
+  let scale = Math.min(1, 1400 / Math.max(w, h));
+  let quality = 0.8;
+  const canvas = document.createElement("canvas");
+  for (let i = 0; i < 12; i++) {
+    canvas.width = Math.round(w * scale);
+    canvas.height = Math.round(h * scale);
+    canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+    const url = canvas.toDataURL("image/jpeg", quality);
+    if (url.length <= MAX_CHARS) return url;
+    if (quality > 0.5) quality -= 0.1; else scale *= 0.8;
+  }
+  throw new Error("image too large");
+}
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try { resolve(shrink(img, img.naturalWidth, img.naturalHeight)); }
+      catch (e) { reject(e); }
+      finally { URL.revokeObjectURL(url); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("unreadable")); };
+    img.src = url;
+  });
+}
+function setPhoto(key, dataUrl) {
+  photos[key] = dataUrl;
+  const img = $(`#box-${key} img`);
+  img.src = dataUrl;
+  img.classList.remove("hidden");
+  setError(key, null);
+  render();
+}
+function setError(key, msgKey) {
+  if (msgKey) errors[key] = msgKey; else delete errors[key];
+  const box = $(`#box-${key}`) || $(`[name="${key}"]:not([type=radio]):not([type=checkbox])`);
+  if (box) box.classList.toggle("invalid", !!msgKey);
+  const el = $(`[data-err="${key}"]`);
+  if (el) el.textContent = msgKey ? t(msgKey) : "";
+}
+document.querySelectorAll("input[data-photo]").forEach(input => {
+  input.addEventListener("change", async () => {
+    const file = input.files[0];
+    if (!file) return;
+    try { setPhoto(input.dataset.photo, await fileToDataUrl(file)); }
+    catch { setError(input.dataset.photo, "eImage"); }
+    input.value = "";
+  });
+});
+
+// ---------- Live selfie ----------
+const video = $("#box-selfie video");
+let stream = null;
+function stopCamera() {
+  if (stream) stream.getTracks().forEach(tr => tr.stop());
+  stream = null;
+  video.classList.add("hidden");
+  $("#camShoot").classList.add("hidden");
+}
+async function openCamera() {
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("unsupported");
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+    video.srcObject = stream;
+    await video.play();
+    $("#box-selfie img").classList.add("hidden");
+    video.classList.remove("hidden");
+    $("#camOpen").classList.add("hidden");
+    $("#camRetake").classList.add("hidden");
+    $("#camShoot").classList.remove("hidden");
+  } catch {
+    // No camera access in the page: fall back to the phone's own camera app.
+    stopCamera();
+    $("#camOpen").classList.add("hidden");
+    $("#camRetake").classList.add("hidden");
+    $("#camFallback").classList.remove("hidden");
+  }
+}
+$("#camOpen").addEventListener("click", openCamera);
+$("#camRetake").addEventListener("click", openCamera);
+$("#camShoot").addEventListener("click", () => {
+  if (!video.videoWidth) return;
+  try { setPhoto("selfie", shrink(video, video.videoWidth, video.videoHeight)); }
+  catch { setError("selfie", "eImage"); return; }
+  stopCamera();
+  $("#camRetake").classList.remove("hidden");
+});
+window.addEventListener("pagehide", stopCamera);
+
+// ---------- Validation and submit ----------
+const form = $("#form");
+function collect() {
+  const f = new FormData(form);
+  const val = k => String(f.get(k) || "").trim().replace(/\s+/g, " ");
+  return {
+    serviceType: val("serviceType"),
+    firstName: val("firstName"), lastName: val("lastName"), fatherName: val("fatherName"),
+    birthDate: val("birthDate"), birthPlace: val("birthPlace"),
+    currentAddress: val("currentAddress"),
+    phone: toLatinDigits(val("phone")).replace(/[\s\-()]/g, ""),
+    email: val("email").toLowerCase()
+  };
+}
+function validate(d) {
+  const e = {};
+  if (!d.serviceType) e.serviceType = "eService";
+  for (const k of ["firstName", "lastName", "fatherName", "birthPlace", "currentAddress"]) {
+    if (!d[k]) e[k] = "eRequired";
+  }
+  const born = new Date(d.birthDate + "T00:00:00");
+  const adult = new Date(); adult.setFullYear(adult.getFullYear() - 18);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d.birthDate) || isNaN(born) || born > adult || born.getFullYear() < 1920) e.birthDate = "eDate";
+  if (!/^\+?[0-9]{7,15}$/.test(d.phone)) e.phone = "ePhone";
+  if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) e.email = "eEmail";
+  for (const k of ["idPhoto", "licensePhoto", "selfie"]) if (!photos[k]) e[k] = "ePhoto";
+  if (!form.consent.checked) e.consent = "eConsent";
+  return e;
+}
+function showSubmitError(key) {
+  const el = $("#submitErr");
+  el.dataset.key = key;
+  el.textContent = t(key);
+  el.classList.remove("hidden");
+}
+form.addEventListener("input", ev => { if (ev.target.name) setError(ev.target.name, null); });
+
+form.addEventListener("submit", async ev => {
+  ev.preventDefault();
+  $("#submitErr").classList.add("hidden");
+  const data = collect();
+  const found = validate(data);
+  const all = ["serviceType", "firstName", "lastName", "fatherName", "birthDate", "birthPlace",
+               "currentAddress", "phone", "email", "idPhoto", "licensePhoto", "selfie", "consent"];
+  all.forEach(k => setError(k, found[k] || null));
+  const first = all.find(k => found[k]);
+  if (first) {
+    showSubmitError("eFix");
+    ($(`#box-${first}`) || $(`[data-err="${first}"]`)).scrollIntoView({ behavior: "smooth", block: "center" });
+    return;
+  }
+  if (!db) { showSubmitError("setupWarn"); return; }
+
+  const btn = $("#submitBtn");
+  btn.disabled = true;
+  btn.textContent = t("sending");
+  try {
+    // One atomic write: the driver record plus its three photos.
+    const ref = doc(collection(db, "drivers"));
+    const batch = writeBatch(db);
+    batch.set(ref, { ...data, lang, status: "new", createdAt: serverTimestamp() });
+    for (const k of ["idPhoto", "licensePhoto", "selfie"]) {
+      batch.set(doc(ref, "files", k), { data: photos[k], createdAt: serverTimestamp() });
+    }
+    await batch.commit();
+    stopCamera();
+    $("#refId").textContent = ref.id.slice(0, 8).toUpperCase();
+    $("#formView").classList.add("hidden");
+    $("#doneView").classList.remove("hidden");
+    window.scrollTo(0, 0);
+  } catch (err) {
+    console.error(err);
+    showSubmitError("eSend");
+    btn.disabled = false;
+    btn.textContent = t("submit");
+  }
+});
+
+render();
+</script>
+</body>
+</html>
