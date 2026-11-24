@@ -77,7 +77,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible
   display: block; width: 100%; max-height: 320px; object-fit: contain;
   background: #0d1512; border-radius: 8px; margin-bottom: 10px;
 }
-.photo video { transform: scaleX(-1); }
+.photo video.mirror { transform: scaleX(-1); }
 .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .hidden { display: none !important; }
 .banner { padding: 12px 14px; border-radius: 8px; margin-bottom: 16px; }

@@ -2,10 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // An admin is any signed-in user whose UID has a document in /admins.
+    // An admin is any signed-in user whose email is a document ID in /admin.
     function isAdmin() {
       return request.auth != null
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+        && request.auth.token.email != null
+        && exists(/databases/$(database)/documents/admin/$(request.auth.token.email));
     }
 
     function shortText(v, max) {
@@ -18,6 +19,7 @@ service cloud.firestore {
         request.resource.data.keys().hasOnly([
           'firstName', 'lastName', 'fatherName', 'birthDate', 'birthPlace',
           'currentAddress', 'phone', 'email', 'serviceType', 'lang',
+          'vehicleType', 'carModel', 'carYear',
           'status', 'createdAt'])
         && shortText(request.resource.data.firstName, 60)
         && shortText(request.resource.data.lastName, 60)
@@ -29,6 +31,14 @@ service cloud.firestore {
         && request.resource.data.email is string
         && request.resource.data.email.size() <= 120
         && request.resource.data.serviceType in ['taxi', 'delivery', 'both']
+        && request.resource.data.vehicleType in ['car', 'bicycle']
+        && request.resource.data.carModel is string
+        && request.resource.data.carModel.size() <= 80
+        && request.resource.data.carYear.matches('^([0-9]{4})?$')
+        // A car must come with its model and year.
+        && (request.resource.data.vehicleType != 'car'
+            || (request.resource.data.carModel.size() > 0
+                && request.resource.data.carYear.size() == 4))
         && request.resource.data.lang in ['ar', 'en']
         && request.resource.data.status == 'new'
         && request.resource.data.createdAt == request.time;
@@ -39,10 +49,10 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
         && request.resource.data.status in ['new', 'approved', 'rejected'];
 
-      // The three photos, stored as compressed JPEG data URLs.
+      // The photos, stored as compressed JPEG data URLs.
       match /files/{fileId} {
         allow create: if
-          fileId in ['idPhoto', 'licensePhoto', 'selfie']
+          fileId in ['idPhoto', 'idPhotoBack', 'licensePhoto', 'licensePhotoBack', 'selfie']
           && request.resource.data.keys().hasOnly(['data', 'createdAt'])
           && request.resource.data.data is string
           && request.resource.data.data.matches('^data:image/jpeg;base64,.*')
@@ -53,8 +63,8 @@ service cloud.firestore {
     }
 
     // Admin list is managed by hand in the Firebase console only.
-    match /admins/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+    match /admin/{email} {
+      allow read: if request.auth != null && request.auth.token.email == email;
     }
   }
 }

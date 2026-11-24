@@ -91,7 +91,10 @@ const T = {
     back: "→ رجوع للقائمة", approve: "قبول", reject: "رفض", markNew: "إعادة إلى جديد", delete: "حذف الطلب",
     firstName: "الاسم", lastName: "الكنية", fatherName: "اسم الأب",
     birthDate: "تاريخ الولادة", birthPlace: "مكان الولادة", currentAddress: "مكان الإقامة الحالي",
-    phone: "رقم الهاتف", idPhoto: "صورة الهوية", licensePhoto: "شهادة السواقة", selfie: "الصورة الشخصية",
+    phone: "رقم الهاتف", colVehicle: "المركبة", car: "سيارة", bicycle: "دراجة هوائية",
+    carModel: "موديل السيارة", carYear: "سنة الصنع",
+    idPhoto: "الهوية — أمامي", idPhotoBack: "الهوية — خلفي",
+    licensePhoto: "شهادة السواقة — أمامي", licensePhotoBack: "شهادة السواقة — خلفي", selfie: "الصورة الشخصية",
     confirmDelete: "حذف هذا الطلب وصوره نهائياً؟",
     eLogin: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
     eDenied: "هذا الحساب ليس لديه صلاحية الإدارة. أضف بريده الإلكتروني كمستند في مجموعة admin.",
@@ -110,7 +113,10 @@ const T = {
     back: "← Back to list", approve: "Approve", reject: "Reject", markNew: "Mark as new", delete: "Delete application",
     firstName: "First name", lastName: "Surname", fatherName: "Father's name",
     birthDate: "Date of birth", birthPlace: "Place of birth", currentAddress: "Current residence",
-    phone: "Phone number", idPhoto: "ID card", licensePhoto: "Driving licence", selfie: "Personal photo",
+    phone: "Phone number", colVehicle: "Vehicle", car: "Car", bicycle: "Bicycle",
+    carModel: "Car model", carYear: "Year of manufacture",
+    idPhoto: "ID card — front", idPhotoBack: "ID card — back",
+    licensePhoto: "Driving licence — front", licensePhotoBack: "Driving licence — back", selfie: "Personal photo",
     confirmDelete: "Permanently delete this application and its photos?",
     eLogin: "Wrong email or password.",
     eDenied: "This account has no admin access. Add its email as a document in the admin collection.",
@@ -131,6 +137,7 @@ const el = (tag, text, cls) => {
   return n;
 };
 
+const PHOTO_KEYS = ["idPhoto", "idPhotoBack", "licensePhoto", "licensePhotoBack", "selfie"];
 let drivers = [];
 let current = null;
 let msgKey = null;
@@ -196,22 +203,26 @@ async function renderDetail(loadPhotos) {
   add(t("currentAddress"), d.currentAddress);
   add(t("phone"), d.phone, true); add(t("email"), d.email, true);
   add(t("colService"), t(d.serviceType) || d.serviceType);
+  add(t("colVehicle"), t(d.vehicleType) || d.vehicleType);
+  if (d.vehicleType === "car") { add(t("carModel"), d.carModel); add(t("carYear"), d.carYear, true); }
   add(t("colDate"), fmtDate(d.createdAt)); add(t("colStatus"), t("st_" + d.status) || d.status);
 
-  const keys = ["idPhoto", "licensePhoto", "selfie"];
   const box = $("#dPhotos");
   if (!loadPhotos) {       // language switch: only relabel
-    box.querySelectorAll("figcaption").forEach((c, i) => { c.textContent = t(keys[i]); });
+    box.querySelectorAll("figcaption").forEach(c => { c.textContent = t(c.dataset.key); });
     return;
   }
   box.replaceChildren();
-  for (const k of keys) {
+  for (const k of PHOTO_KEYS) {
     const fig = el("figure");
     const img = el("img");
     img.alt = t(k);
-    fig.append(img, el("figcaption", t(k)));
+    const cap = el("figcaption", t(k));
+    cap.dataset.key = k;
+    fig.append(img, cap);
     box.append(fig);
     getDoc(doc(db, "drivers", d.id, "files", k)).then(snap => {
+      if (!snap.exists()) { fig.remove(); return; }   // photo not provided
       const data = snap.data()?.data;
       // Only ever render JPEG data URLs produced by the form.
       if (current === d && typeof data === "string" && data.startsWith("data:image/jpeg;base64,")) {
@@ -242,7 +253,7 @@ async function load() {
 
 function exportCsv() {
   const cols = ["firstName", "lastName", "fatherName", "birthDate", "birthPlace", "currentAddress",
-                "phone", "email", "serviceType", "status"];
+                "phone", "email", "serviceType", "vehicleType", "carModel", "carYear", "status"];
   const cell = v => {
     let s = String(v ?? "");
     if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;      // stop spreadsheet formula injection
@@ -309,7 +320,7 @@ if (!configured) {
     if (!current || !confirm(t("confirmDelete"))) return;
     try {
       const batch = writeBatch(db);
-      for (const k of ["idPhoto", "licensePhoto", "selfie"]) batch.delete(doc(db, "drivers", current.id, "files", k));
+      for (const k of PHOTO_KEYS) batch.delete(doc(db, "drivers", current.id, "files", k));
       batch.delete(doc(db, "drivers", current.id));
       await batch.commit();
       drivers = drivers.filter(d => d !== current);

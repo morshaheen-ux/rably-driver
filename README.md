@@ -20,10 +20,12 @@ The driver opens the link, fills in the form, and the record lands in your Fireb
 
 ### 2. Create your admin login
 1. **Build → Authentication → Get started → Email/Password → Enable**.
-2. **Users → Add user**: your email and a strong password. Copy the **User UID** shown in the list.
-3. **Firestore Database → Start collection** named `admins` → **Document ID = that UID** → add any field (e.g. `role` = `admin`).
+2. **Users → Add user**: your email and a strong password.
+3. **Firestore Database → Start collection** named `admin` → **Document ID = that email address**, in lowercase (fields are optional).
+4. **Authentication → Settings → User actions**: untick **Enable create (sign-up)** so nobody else can create accounts.
 
-Repeat steps 2–3 for each person who should see the applications.
+Repeat steps 2–3 for each person who should see the applications. When you remove someone,
+delete their document from `admin` first, then their user.
 
 ### 3. Connect the form
 1. **Project settings (gear icon) → Your apps → Web (`</>`)** → register an app.
@@ -49,11 +51,14 @@ drivers/{driverId}
   phone                                digits, optional leading +
   email                                string (may be empty)
   serviceType                          "taxi" | "delivery" | "both"
+  vehicleType                          "car" | "bicycle"
+  carModel, carYear                    string (empty for a bicycle; year is 4 digits)
   status                               "new" | "approved" | "rejected"
   lang                                 "ar" | "en"
   createdAt                            timestamp
 
-drivers/{driverId}/files/idPhoto | licensePhoto | selfie
+drivers/{driverId}/files/idPhoto | idPhotoBack | licensePhoto | licensePhotoBack | selfie
+  (the two licence photos are optional for a bicycle)
   data                                 JPEG as a data URL (base64)
   createdAt                            timestamp
 ```
@@ -66,7 +71,7 @@ access when you get to that step; at the moment only admins can read.
 
 - **Photos are stored in Firestore, not Firebase Storage.** Firebase Storage now requires a
   billing account. The form shrinks each photo in the browser (about 100–500 KB) so it fits in
-  a database document. The free plan holds 1 GB, roughly 1,000–2,000 drivers. Past that, move
+  a database document. The free plan holds 1 GB, roughly 600–1,500 drivers with five photos each. Past that, move
   to the Blaze plan and Storage.
 - **The keys in `firebase-config.js` are meant to be public.** Protection comes from
   `firestore.rules`: the public can only *create* an application, never read one.

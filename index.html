@@ -21,12 +21,29 @@
     <form id="form" novalidate>
       <section class="card">
         <h2 data-i18n="secService"></h2>
-        <div class="radios" id="serviceType">
+        <div class="radios" id="box-serviceType">
           <label><input type="radio" name="serviceType" value="taxi"> <span data-i18n="taxi"></span></label>
           <label><input type="radio" name="serviceType" value="delivery"> <span data-i18n="delivery"></span></label>
           <label><input type="radio" name="serviceType" value="both"> <span data-i18n="both"></span></label>
         </div>
         <div class="err" data-err="serviceType"></div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="secVehicle"></h2>
+        <div class="radios" id="box-vehicleType">
+          <label><input type="radio" name="vehicleType" value="car"> <span data-i18n="car"></span></label>
+          <label><input type="radio" name="vehicleType" value="bicycle"> <span data-i18n="bicycle"></span></label>
+        </div>
+        <div class="err" data-err="vehicleType"></div>
+        <div class="grid two hidden" id="carFields" style="margin-top:14px">
+          <label class="field"><span data-i18n="carModel"></span>
+            <input type="text" name="carModel" maxlength="80">
+            <div class="err" data-err="carModel"></div></label>
+          <label class="field"><span data-i18n="carYear"></span>
+            <input type="text" name="carYear" class="ltr" inputmode="numeric" maxlength="4" placeholder="2015">
+            <div class="err" data-err="carYear"></div></label>
+        </div>
       </section>
 
       <section class="card">
@@ -67,40 +84,8 @@
 
       <section class="card">
         <h2 data-i18n="secPhotos"></h2>
-        <div class="grid">
-          <div class="photo" id="box-idPhoto">
-            <span class="label" data-i18n="idPhoto"></span>
-            <p class="hint" data-i18n="docHint"></p>
-            <img class="hidden" alt="">
-            <label class="btn"><span data-i18n="choosePhoto"></span>
-              <input type="file" accept="image/*" class="hidden" data-photo="idPhoto"></label>
-            <div class="err" data-err="idPhoto"></div>
-          </div>
-
-          <div class="photo" id="box-licensePhoto">
-            <span class="label" data-i18n="licensePhoto"></span>
-            <p class="hint" data-i18n="docHint"></p>
-            <img class="hidden" alt="">
-            <label class="btn"><span data-i18n="choosePhoto"></span>
-              <input type="file" accept="image/*" class="hidden" data-photo="licensePhoto"></label>
-            <div class="err" data-err="licensePhoto"></div>
-          </div>
-
-          <div class="photo" id="box-selfie">
-            <span class="label" data-i18n="selfie"></span>
-            <p class="hint" data-i18n="selfieHint"></p>
-            <video class="hidden" playsinline muted></video>
-            <img class="hidden" alt="">
-            <div class="row">
-              <button type="button" class="btn" id="camOpen" data-i18n="openCamera"></button>
-              <button type="button" class="btn primary hidden" id="camShoot" data-i18n="capture"></button>
-              <button type="button" class="btn hidden" id="camRetake" data-i18n="retake"></button>
-              <label class="btn hidden" id="camFallback"><span data-i18n="openCamera"></span>
-                <input type="file" accept="image/*" capture="user" class="hidden" data-photo="selfie"></label>
-            </div>
-            <div class="err" data-err="selfie"></div>
-          </div>
-        </div>
+        <p class="sub" data-i18n="photosIntro"></p>
+        <div class="grid" id="photoBoxes"></div>
       </section>
 
       <section class="card">
@@ -133,9 +118,11 @@ import { getFirestore, collection, doc, writeBatch, serverTimestamp }
 const T = {
   ar: {
     title: "تسجيل السائقين",
-    intro: "املأ بياناتك وأرفق الصور المطلوبة. يستغرق ذلك حوالي ٣ دقائق.",
+    intro: "املأ بياناتك والتقط الصور المطلوبة. يستغرق ذلك حوالي ٥ دقائق.",
     setupWarn: "لم يتم ربط النموذج بـ Firebase بعد. عدّل الملف firebase-config.js.",
     secService: "نوع الخدمة", taxi: "تكسي", delivery: "توصيل", both: "الاثنان معاً",
+    secVehicle: "نوع المركبة", car: "سيارة", bicycle: "دراجة هوائية",
+    carModel: "موديل السيارة", carYear: "سنة الصنع",
     secPersonal: "البيانات الشخصية",
     firstName: "الاسم", lastName: "الكنية", fatherName: "اسم الأب",
     birthDate: "تاريخ الولادة", birthPlace: "مكان الولادة",
@@ -143,21 +130,25 @@ const T = {
     secContact: "بيانات التواصل", phone: "رقم الهاتف", email: "البريد الإلكتروني",
     optional: "(اختياري)",
     secPhotos: "الصور المطلوبة",
-    idPhoto: "صورة الهوية", licensePhoto: "صورة شهادة السواقة", selfie: "صورة شخصية مباشرة",
-    docHint: "صورة واضحة تُظهر كامل الوثيقة.",
-    selfieHint: "تُلتقط الآن بكاميرا الجهاز، والوجه واضح ومضاء.",
-    choosePhoto: "اختيار أو التقاط صورة", changePhoto: "تغيير الصورة",
+    photosIntro: "تُلتقط جميع الصور الآن بكاميرا الجهاز، ولا يمكن رفع صور محفوظة.",
+    idPhoto: "الهوية — الوجه الأمامي", idPhotoBack: "الهوية — الوجه الخلفي (ظهر الهوية)",
+    licensePhoto: "شهادة السواقة — الوجه الأمامي", licensePhotoBack: "شهادة السواقة — الوجه الخلفي (ظهر الشهادة)",
+    selfie: "صورة شخصية مباشرة",
+    docHint: "يجب أن تظهر الوثيقة كاملة وواضحة.",
+    selfieHint: "الوجه واضح ومضاء، بدون نظارات شمسية.",
     openCamera: "فتح الكاميرا", capture: "التقاط", retake: "إعادة الالتقاط",
     consent: "أوافق على حفظ بياناتي وصوري لغرض دراسة طلب انضمامي كسائق.",
     submit: "إرسال الطلب", sending: "جارٍ الإرسال…",
     doneTitle: "تم استلام طلبك",
     doneText: "شكراً لك. سنراجع بياناتك ونتواصل معك على رقم الهاتف الذي أدخلته.",
     refLabel: "رقم الطلب:",
-    eRequired: "هذا الحقل مطلوب.", eService: "اختر نوع الخدمة.",
+    eRequired: "هذا الحقل مطلوب.", eService: "اختر نوع الخدمة.", eVehicle: "اختر نوع المركبة.",
+    eYear: "أدخل سنة صنع صحيحة من ٤ أرقام، مثال: 2015",
     eDate: "أدخل تاريخ ولادة صحيحاً (العمر ١٨ سنة على الأقل).",
     ePhone: "أدخل رقم هاتف صحيحاً، مثال: ‎+963912345678",
     eEmail: "البريد الإلكتروني غير صحيح.",
-    ePhoto: "هذه الصورة مطلوبة.", eImage: "تعذّرت قراءة الصورة. جرّب صورة أخرى.",
+    ePhoto: "هذه الصورة مطلوبة.", eImage: "تعذّرت قراءة الصورة. التقطها مرة أخرى.",
+    eCamera: "تعذّر فتح الكاميرا داخل الصفحة. اسمح باستخدام الكاميرا، أو اضغط الزر لفتح كاميرا الهاتف.",
     eConsent: "الموافقة مطلوبة لإرسال الطلب.",
     eFix: "يوجد حقول ناقصة أو غير صحيحة. راجع الحقول المحددة بالأحمر.",
     eSend: "تعذّر إرسال الطلب. تحقق من الاتصال بالإنترنت وحاول مرة أخرى.",
@@ -165,9 +156,11 @@ const T = {
   },
   en: {
     title: "Driver Registration",
-    intro: "Fill in your details and attach the required photos. It takes about 3 minutes.",
+    intro: "Fill in your details and take the required photos. It takes about 5 minutes.",
     setupWarn: "This form is not connected to Firebase yet. Edit firebase-config.js.",
     secService: "Service type", taxi: "Taxi", delivery: "Delivery", both: "Both",
+    secVehicle: "Vehicle type", car: "Car", bicycle: "Bicycle",
+    carModel: "Car model", carYear: "Year of manufacture",
     secPersonal: "Personal details",
     firstName: "First name", lastName: "Surname", fatherName: "Father's name",
     birthDate: "Date of birth", birthPlace: "Place of birth",
@@ -175,21 +168,25 @@ const T = {
     secContact: "Contact details", phone: "Phone number", email: "Email",
     optional: "(optional)",
     secPhotos: "Required photos",
-    idPhoto: "Photo of ID card", licensePhoto: "Photo of driving licence", selfie: "Live personal photo",
-    docHint: "A clear photo showing the whole document.",
-    selfieHint: "Taken now with your device camera, face clear and well lit.",
-    choosePhoto: "Choose or take photo", changePhoto: "Change photo",
+    photosIntro: "All photos are taken now with your device camera. Saved photos cannot be uploaded.",
+    idPhoto: "ID card — front", idPhotoBack: "ID card — back",
+    licensePhoto: "Driving licence — front", licensePhotoBack: "Driving licence — back",
+    selfie: "Live personal photo",
+    docHint: "The whole document must be visible and clear.",
+    selfieHint: "Face clear and well lit, no sunglasses.",
     openCamera: "Open camera", capture: "Capture", retake: "Retake",
     consent: "I agree to my details and photos being stored to review my application as a driver.",
     submit: "Submit application", sending: "Sending…",
     doneTitle: "Application received",
     doneText: "Thank you. We will review your details and contact you on the phone number you entered.",
     refLabel: "Reference:",
-    eRequired: "This field is required.", eService: "Choose a service type.",
+    eRequired: "This field is required.", eService: "Choose a service type.", eVehicle: "Choose a vehicle type.",
+    eYear: "Enter a valid 4-digit year, e.g. 2015",
     eDate: "Enter a valid date of birth (you must be at least 18).",
     ePhone: "Enter a valid phone number, e.g. +963912345678",
     eEmail: "This email address is not valid.",
-    ePhoto: "This photo is required.", eImage: "Could not read that image. Try another one.",
+    ePhoto: "This photo is required.", eImage: "Could not read that photo. Take it again.",
+    eCamera: "Could not open the camera in the page. Allow camera access, or press the button to use your phone's camera.",
     eConsent: "You must agree before submitting.",
     eFix: "Some fields are missing or invalid. Check the ones marked in red.",
     eSend: "Could not send your application. Check your internet connection and try again.",
@@ -197,11 +194,33 @@ const T = {
   }
 };
 
+const PHOTO_KEYS = ["idPhoto", "idPhotoBack", "licensePhoto", "licensePhotoBack", "selfie"];
+const LICENCE_KEYS = ["licensePhoto", "licensePhotoBack"];
+
 let lang = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "ar";
 const t = k => T[lang][k];
 const $ = s => document.querySelector(s);
 const errors = {};          // field -> i18n key
-const photos = {};          // idPhoto / licensePhoto / selfie -> data URL
+const photos = {};          // photo key -> JPEG data URL
+const fallback = {};        // photo key -> true when the in-page camera failed
+let active = null;          // { key, stream } for the camera that is open now
+
+// ---------- Build the five photo boxes ----------
+$("#photoBoxes").innerHTML = PHOTO_KEYS.map(key => `
+  <div class="photo" id="box-${key}">
+    <span class="label"><span data-i18n="${key}"></span> <span class="opt hidden" data-opt data-i18n="optional"></span></span>
+    <p class="hint" data-i18n="${key === "selfie" ? "selfieHint" : "docHint"}"></p>
+    <video class="hidden${key === "selfie" ? " mirror" : ""}" playsinline muted></video>
+    <img class="hidden" alt="">
+    <div class="row">
+      <button type="button" class="btn" data-act="open" data-i18n="openCamera"></button>
+      <button type="button" class="btn primary hidden" data-act="shoot" data-i18n="capture"></button>
+      <button type="button" class="btn hidden" data-act="retake" data-i18n="retake"></button>
+      <label class="btn hidden" data-act="fallback"><span data-i18n="openCamera"></span>
+        <input type="file" accept="image/*" capture="${key === "selfie" ? "user" : "environment"}" class="hidden"></label>
+    </div>
+    <div class="err" data-err="${key}"></div>
+  </div>`).join("");
 
 function render() {
   document.documentElement.lang = lang;
@@ -209,9 +228,6 @@ function render() {
   document.title = t("title");
   document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.dataset.i18n); });
   $("#langBtn").textContent = t("langBtn");
-  for (const key of ["idPhoto", "licensePhoto"]) {
-    $(`#box-${key} label.btn span`).textContent = t(photos[key] ? "changePhoto" : "choosePhoto");
-  }
   document.querySelectorAll("[data-err]").forEach(el => {
     const k = errors[el.dataset.err];
     el.textContent = k ? t(k) : "";
@@ -226,6 +242,28 @@ const db = configured ? getFirestore(initializeApp(firebaseConfig)) : null;
 
 // Latin digits for Arabic-Indic input, e.g. ٠٩١٢ -> 0912
 const toLatinDigits = s => s.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)).replace(/[۰-۹]/g, d => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
+
+function setError(key, msgKey) {
+  if (msgKey) errors[key] = msgKey; else delete errors[key];
+  const box = $(`#box-${key}`) || $(`[name="${key}"]:not([type=radio]):not([type=checkbox])`);
+  if (box) box.classList.toggle("invalid", !!msgKey);
+  const el = $(`[data-err="${key}"]`);
+  if (el) el.textContent = msgKey ? t(msgKey) : "";
+}
+
+// ---------- Vehicle type ----------
+const form = $("#form");
+const vehicle = () => new FormData(form).get("vehicleType") || "";
+function syncVehicle() {
+  const v = vehicle();
+  $("#carFields").classList.toggle("hidden", v !== "car");
+  // A bicycle rider may have no driving licence, so those two photos become optional.
+  for (const k of LICENCE_KEYS) {
+    $(`#box-${k} [data-opt]`).classList.toggle("hidden", v !== "bicycle");
+    if (v === "bicycle" && errors[k] === "ePhoto") setError(k, null);
+  }
+}
+form.querySelectorAll('[name="vehicleType"]').forEach(r => r.addEventListener("change", syncVehicle));
 
 // ---------- Photos ----------
 // Photos are shrunk in the browser and stored as JPEG data URLs in Firestore,
@@ -258,77 +296,87 @@ function fileToDataUrl(file) {
     img.src = url;
   });
 }
+
+// Show the right preview and buttons for one photo box.
+function sync(key) {
+  const box = $(`#box-${key}`);
+  const live = active?.key === key;
+  const has = !!photos[key];
+  const act = a => box.querySelector(`[data-act="${a}"]`);
+  box.querySelector("video").classList.toggle("hidden", !live);
+  box.querySelector("img").classList.toggle("hidden", live || !has);
+  act("shoot").classList.toggle("hidden", !live);
+  act("open").classList.toggle("hidden", live || has || !!fallback[key]);
+  act("retake").classList.toggle("hidden", live || !has || !!fallback[key]);
+  act("fallback").classList.toggle("hidden", live || !fallback[key]);
+}
 function setPhoto(key, dataUrl) {
   photos[key] = dataUrl;
-  const img = $(`#box-${key} img`);
-  img.src = dataUrl;
-  img.classList.remove("hidden");
+  $(`#box-${key} img`).src = dataUrl;
   setError(key, null);
-  render();
+  sync(key);
 }
-function setError(key, msgKey) {
-  if (msgKey) errors[key] = msgKey; else delete errors[key];
-  const box = $(`#box-${key}`) || $(`[name="${key}"]:not([type=radio]):not([type=checkbox])`);
-  if (box) box.classList.toggle("invalid", !!msgKey);
-  const el = $(`[data-err="${key}"]`);
-  if (el) el.textContent = msgKey ? t(msgKey) : "";
+function stopCamera() {
+  if (!active) return;
+  active.stream.getTracks().forEach(tr => tr.stop());
+  const key = active.key;
+  active = null;
+  sync(key);
 }
-document.querySelectorAll("input[data-photo]").forEach(input => {
+async function openCamera(key) {
+  stopCamera();                       // only one camera open at a time
+  try {
+    if (!navigator.mediaDevices?.getUserMedia) throw new Error("unsupported");
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: key === "selfie" ? "user" : "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    active = { key, stream };
+    const video = $(`#box-${key} video`);
+    video.srcObject = stream;
+    setError(key, null);
+    sync(key);
+    await video.play();
+  } catch {
+    // The page could not open the camera: hand over to the phone's own camera app.
+    stopCamera();
+    fallback[key] = true;
+    setError(key, "eCamera");
+    sync(key);
+  }
+}
+for (const key of PHOTO_KEYS) {
+  const box = $(`#box-${key}`);
+  box.querySelector('[data-act="open"]').addEventListener("click", () => openCamera(key));
+  box.querySelector('[data-act="retake"]').addEventListener("click", () => openCamera(key));
+  box.querySelector('[data-act="shoot"]').addEventListener("click", () => {
+    const video = box.querySelector("video");
+    if (!video.videoWidth) return;
+    try { setPhoto(key, shrink(video, video.videoWidth, video.videoHeight)); }
+    catch { setError(key, "eImage"); return; }
+    stopCamera();
+  });
+  const input = box.querySelector("input[type=file]");
   input.addEventListener("change", async () => {
     const file = input.files[0];
     if (!file) return;
-    try { setPhoto(input.dataset.photo, await fileToDataUrl(file)); }
-    catch { setError(input.dataset.photo, "eImage"); }
+    try { setPhoto(key, await fileToDataUrl(file)); }
+    catch { setError(key, "eImage"); }
     input.value = "";
   });
-});
-
-// ---------- Live selfie ----------
-const video = $("#box-selfie video");
-let stream = null;
-function stopCamera() {
-  if (stream) stream.getTracks().forEach(tr => tr.stop());
-  stream = null;
-  video.classList.add("hidden");
-  $("#camShoot").classList.add("hidden");
 }
-async function openCamera() {
-  try {
-    if (!navigator.mediaDevices?.getUserMedia) throw new Error("unsupported");
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
-    video.srcObject = stream;
-    await video.play();
-    $("#box-selfie img").classList.add("hidden");
-    video.classList.remove("hidden");
-    $("#camOpen").classList.add("hidden");
-    $("#camRetake").classList.add("hidden");
-    $("#camShoot").classList.remove("hidden");
-  } catch {
-    // No camera access in the page: fall back to the phone's own camera app.
-    stopCamera();
-    $("#camOpen").classList.add("hidden");
-    $("#camRetake").classList.add("hidden");
-    $("#camFallback").classList.remove("hidden");
-  }
-}
-$("#camOpen").addEventListener("click", openCamera);
-$("#camRetake").addEventListener("click", openCamera);
-$("#camShoot").addEventListener("click", () => {
-  if (!video.videoWidth) return;
-  try { setPhoto("selfie", shrink(video, video.videoWidth, video.videoHeight)); }
-  catch { setError("selfie", "eImage"); return; }
-  stopCamera();
-  $("#camRetake").classList.remove("hidden");
-});
 window.addEventListener("pagehide", stopCamera);
 
 // ---------- Validation and submit ----------
-const form = $("#form");
 function collect() {
   const f = new FormData(form);
   const val = k => String(f.get(k) || "").trim().replace(/\s+/g, " ");
+  const isCar = val("vehicleType") === "car";
   return {
     serviceType: val("serviceType"),
+    vehicleType: val("vehicleType"),
+    carModel: isCar ? val("carModel") : "",
+    carYear: isCar ? toLatinDigits(val("carYear")) : "",
     firstName: val("firstName"), lastName: val("lastName"), fatherName: val("fatherName"),
     birthDate: val("birthDate"), birthPlace: val("birthPlace"),
     currentAddress: val("currentAddress"),
@@ -339,6 +387,12 @@ function collect() {
 function validate(d) {
   const e = {};
   if (!d.serviceType) e.serviceType = "eService";
+  if (!d.vehicleType) e.vehicleType = "eVehicle";
+  if (d.vehicleType === "car") {
+    if (!d.carModel) e.carModel = "eRequired";
+    const y = Number(d.carYear);
+    if (!/^\d{4}$/.test(d.carYear) || y < 1970 || y > new Date().getFullYear() + 1) e.carYear = "eYear";
+  }
   for (const k of ["firstName", "lastName", "fatherName", "birthPlace", "currentAddress"]) {
     if (!d[k]) e[k] = "eRequired";
   }
@@ -347,7 +401,10 @@ function validate(d) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.birthDate) || isNaN(born) || born > adult || born.getFullYear() < 1920) e.birthDate = "eDate";
   if (!/^\+?[0-9]{7,15}$/.test(d.phone)) e.phone = "ePhone";
   if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) e.email = "eEmail";
-  for (const k of ["idPhoto", "licensePhoto", "selfie"]) if (!photos[k]) e[k] = "ePhoto";
+  for (const k of PHOTO_KEYS) {
+    const optional = d.vehicleType === "bicycle" && LICENCE_KEYS.includes(k);
+    if (!photos[k] && !optional) e[k] = "ePhoto";
+  }
   if (!form.consent.checked) e.consent = "eConsent";
   return e;
 }
@@ -364,8 +421,8 @@ form.addEventListener("submit", async ev => {
   $("#submitErr").classList.add("hidden");
   const data = collect();
   const found = validate(data);
-  const all = ["serviceType", "firstName", "lastName", "fatherName", "birthDate", "birthPlace",
-               "currentAddress", "phone", "email", "idPhoto", "licensePhoto", "selfie", "consent"];
+  const all = ["serviceType", "vehicleType", "carModel", "carYear", "firstName", "lastName", "fatherName",
+               "birthDate", "birthPlace", "currentAddress", "phone", "email", ...PHOTO_KEYS, "consent"];
   all.forEach(k => setError(k, found[k] || null));
   const first = all.find(k => found[k]);
   if (first) {
@@ -379,12 +436,12 @@ form.addEventListener("submit", async ev => {
   btn.disabled = true;
   btn.textContent = t("sending");
   try {
-    // One atomic write: the driver record plus its three photos.
+    // One atomic write: the driver record plus its photos.
     const ref = doc(collection(db, "drivers"));
     const batch = writeBatch(db);
     batch.set(ref, { ...data, lang, status: "new", createdAt: serverTimestamp() });
-    for (const k of ["idPhoto", "licensePhoto", "selfie"]) {
-      batch.set(doc(ref, "files", k), { data: photos[k], createdAt: serverTimestamp() });
+    for (const k of PHOTO_KEYS) {
+      if (photos[k]) batch.set(doc(ref, "files", k), { data: photos[k], createdAt: serverTimestamp() });
     }
     await batch.commit();
     stopCamera();
@@ -401,6 +458,7 @@ form.addEventListener("submit", async ev => {
 });
 
 render();
+syncVehicle();
 </script>
 </body>
 </html>
