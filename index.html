@@ -20,22 +20,50 @@
     <p class="sub" data-i18n="intro"></p>
     <form id="form" novalidate>
       <section class="card">
-        <h2 data-i18n="secService"></h2>
-        <div class="radios" id="box-serviceType">
-          <label><input type="radio" name="serviceType" value="taxi"> <span data-i18n="taxi"></span></label>
-          <label><input type="radio" name="serviceType" value="delivery"> <span data-i18n="delivery"></span></label>
-          <label><input type="radio" name="serviceType" value="both"> <span data-i18n="both"></span></label>
+        <h2 data-i18n="secJoin"></h2>
+        <div class="choices" id="box-track">
+          <label class="choice">
+            <input type="radio" name="track" value="rides">
+            <span class="choice-text">
+              <span class="badge rides" data-i18n="bRides"></span>
+              <strong data-i18n="tRides"></strong>
+              <small data-i18n="tRidesSub1"></small>
+              <small data-i18n="tRidesSub2"></small>
+            </span>
+            <span class="choice-art"><svg viewBox="0 0 64 40" aria-hidden="true"><path d="M5 29v-7l7-2 8-9h19l10 9 9 2v7"/><path d="M22 20l5-6h11l6 6z"/><path d="M23 29h18"/><circle cx="17" cy="30" r="5"/><circle cx="47" cy="30" r="5"/></svg></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="track" value="motor">
+            <span class="choice-text">
+              <span class="badge delivery" data-i18n="bDelivery"></span>
+              <strong data-i18n="tMotor"></strong>
+              <small data-i18n="tMotorSub"></small>
+            </span>
+            <span class="choice-art"><svg viewBox="0 0 64 40" aria-hidden="true"><circle cx="13" cy="30" r="6"/><circle cx="51" cy="30" r="6"/><path d="M19 30h20l8-22"/><path d="M42 8h9"/><path d="M13 30v-8h16v8"/><path d="M12 19h18"/></svg></span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="track" value="bike">
+            <span class="choice-text">
+              <span class="badge delivery" data-i18n="bDelivery"></span>
+              <strong data-i18n="tBike"></strong>
+              <small data-i18n="tBikeSub"></small>
+            </span>
+            <span class="choice-art"><svg viewBox="0 0 64 40" aria-hidden="true"><circle cx="13" cy="27" r="9"/><circle cx="51" cy="27" r="9"/><path d="M13 27l10-15h18l10 15"/><path d="M23 12l9 15h-19"/><path d="M32 27l9-15"/><path d="M19 12h8"/><path d="M41 12l-2-6h6"/></svg></span>
+          </label>
         </div>
-        <div class="err" data-err="serviceType"></div>
-      </section>
+        <div class="err" data-err="track"></div>
 
-      <section class="card">
-        <h2 data-i18n="secVehicle"></h2>
-        <div class="radios" id="box-vehicleType">
-          <label><input type="radio" name="vehicleType" value="car"> <span data-i18n="car"></span></label>
-          <label><input type="radio" name="vehicleType" value="bicycle"> <span data-i18n="bicycle"></span></label>
+        <div id="vehicleBox" class="hidden" style="margin-top:16px">
+          <span class="label" data-i18n="chooseVehicle"></span>
+          <div class="radios" id="box-vehicleType">
+            <label class="hidden"><input type="radio" name="vehicleType" value="car" data-track="rides"> <span data-i18n="car"></span></label>
+            <label><input type="radio" name="vehicleType" value="scooter" data-track="motor"> <span data-i18n="scooter"></span></label>
+            <label><input type="radio" name="vehicleType" value="car" data-track="motor"> <span data-i18n="car"></span></label>
+            <label><input type="radio" name="vehicleType" value="bicycle" data-track="bike"> <span data-i18n="bicycle"></span></label>
+            <label><input type="radio" name="vehicleType" value="ebike" data-track="bike"> <span data-i18n="ebike"></span></label>
+          </div>
+          <div class="err" data-err="vehicleType"></div>
         </div>
-        <div class="err" data-err="vehicleType"></div>
         <div class="grid two hidden" id="carFields" style="margin-top:14px">
           <label class="field"><span data-i18n="carModel"></span>
             <input type="text" name="carModel" maxlength="80">
@@ -120,9 +148,14 @@ const T = {
     title: "تسجيل السائقين",
     intro: "املأ بياناتك والتقط الصور المطلوبة. يستغرق ذلك حوالي ٥ دقائق.",
     setupWarn: "لم يتم ربط النموذج بـ Firebase بعد. عدّل الملف firebase-config.js.",
-    secService: "نوع الخدمة", taxi: "تكسي", delivery: "توصيل", both: "الاثنان معاً",
-    secVehicle: "نوع المركبة", car: "سيارة", bicycle: "دراجة هوائية",
-    carModel: "موديل السيارة", carYear: "سنة الصنع",
+    secJoin: "كيف تريد الانضمام؟",
+    bRides: "المشاوير", bDelivery: "التوصيل",
+    tRides: "انضم بصفة سائق", tRidesSub1: "العمر: 18 سنة أو أكثر", tRidesSub2: "شهادة سواقة وسيارة خاصة",
+    tMotor: "التوصيل بسكوتر أو سيارة", tMotorSub: "تحتاج إلى شهادة سواقة",
+    tBike: "التوصيل بالدراجة أو الدراجة الكهربائية", tBikeSub: "لا تحتاج إلى شهادة سواقة",
+    chooseVehicle: "اختر مركبتك",
+    car: "سيارة", scooter: "سكوتر", bicycle: "دراجة هوائية", ebike: "دراجة كهربائية",
+    carModel: "موديل المركبة", carYear: "سنة الصنع",
     secPersonal: "البيانات الشخصية",
     firstName: "الاسم", lastName: "الكنية", fatherName: "اسم الأب",
     birthDate: "تاريخ الولادة", birthPlace: "مكان الولادة",
@@ -142,7 +175,7 @@ const T = {
     doneTitle: "تم استلام طلبك",
     doneText: "شكراً لك. سنراجع بياناتك ونتواصل معك على رقم الهاتف الذي أدخلته.",
     refLabel: "رقم الطلب:",
-    eRequired: "هذا الحقل مطلوب.", eService: "اختر نوع الخدمة.", eVehicle: "اختر نوع المركبة.",
+    eRequired: "هذا الحقل مطلوب.", eService: "اختر طريقة الانضمام.", eVehicle: "اختر نوع المركبة.",
     eYear: "أدخل سنة صنع صحيحة من ٤ أرقام، مثال: 2015",
     eDate: "أدخل تاريخ ولادة صحيحاً (العمر ١٨ سنة على الأقل).",
     ePhone: "أدخل رقم هاتف صحيحاً، مثال: ‎+963912345678",
@@ -158,9 +191,14 @@ const T = {
     title: "Driver Registration",
     intro: "Fill in your details and take the required photos. It takes about 5 minutes.",
     setupWarn: "This form is not connected to Firebase yet. Edit firebase-config.js.",
-    secService: "Service type", taxi: "Taxi", delivery: "Delivery", both: "Both",
-    secVehicle: "Vehicle type", car: "Car", bicycle: "Bicycle",
-    carModel: "Car model", carYear: "Year of manufacture",
+    secJoin: "How do you want to join?",
+    bRides: "Rides", bDelivery: "Delivery",
+    tRides: "Join as a driver", tRidesSub1: "Age: 18 or older", tRidesSub2: "Driving licence and your own car",
+    tMotor: "Deliver by scooter or car", tMotorSub: "Driving licence needed",
+    tBike: "Deliver by bicycle or e-bike", tBikeSub: "No driving licence needed",
+    chooseVehicle: "Choose your vehicle",
+    car: "Car", scooter: "Scooter", bicycle: "Bicycle", ebike: "E-bike",
+    carModel: "Vehicle model", carYear: "Year of manufacture",
     secPersonal: "Personal details",
     firstName: "First name", lastName: "Surname", fatherName: "Father's name",
     birthDate: "Date of birth", birthPlace: "Place of birth",
@@ -180,7 +218,7 @@ const T = {
     doneTitle: "Application received",
     doneText: "Thank you. We will review your details and contact you on the phone number you entered.",
     refLabel: "Reference:",
-    eRequired: "This field is required.", eService: "Choose a service type.", eVehicle: "Choose a vehicle type.",
+    eRequired: "This field is required.", eService: "Choose how you want to join.", eVehicle: "Choose a vehicle type.",
     eYear: "Enter a valid 4-digit year, e.g. 2015",
     eDate: "Enter a valid date of birth (you must be at least 18).",
     ePhone: "Enter a valid phone number, e.g. +963912345678",
@@ -196,6 +234,8 @@ const T = {
 
 const PHOTO_KEYS = ["idPhoto", "idPhotoBack", "licensePhoto", "licensePhotoBack", "selfie"];
 const LICENCE_KEYS = ["licensePhoto", "licensePhotoBack"];
+const MOTOR = ["car", "scooter"];          // need model, year and a driving licence
+const NO_LICENCE = ["bicycle", "ebike"];   // licence photos are optional
 
 let lang = new URLSearchParams(location.search).get("lang") === "en" ? "en" : "ar";
 const t = k => T[lang][k];
@@ -253,17 +293,28 @@ function setError(key, msgKey) {
 
 // ---------- Vehicle type ----------
 const form = $("#form");
-const vehicle = () => new FormData(form).get("vehicleType") || "";
+const field = name => new FormData(form).get(name) || "";
 function syncVehicle() {
-  const v = vehicle();
-  $("#carFields").classList.toggle("hidden", v !== "car");
-  // A bicycle rider may have no driving licence, so those two photos become optional.
+  const track = field("track");
+  // Show only the vehicles that belong to the chosen card.
+  form.querySelectorAll('[name="vehicleType"]').forEach(r => {
+    const ok = r.dataset.track === track;
+    r.closest("label").classList.toggle("hidden", !ok || track === "rides");
+    if (!ok) r.checked = false;
+  });
+  if (track === "rides") form.querySelector('[name="vehicleType"][data-track="rides"]').checked = true;
+  $("#vehicleBox").classList.toggle("hidden", track === "" || track === "rides");
+  const v = field("vehicleType");
+  $("#carFields").classList.toggle("hidden", !MOTOR.includes(v));
   for (const k of LICENCE_KEYS) {
-    $(`#box-${k} [data-opt]`).classList.toggle("hidden", v !== "bicycle");
-    if (v === "bicycle" && errors[k] === "ePhoto") setError(k, null);
+    $(`#box-${k} [data-opt]`).classList.toggle("hidden", !NO_LICENCE.includes(v));
+    if (NO_LICENCE.includes(v) && errors[k] === "ePhoto") setError(k, null);
   }
 }
-form.querySelectorAll('[name="vehicleType"]').forEach(r => r.addEventListener("change", syncVehicle));
+form.querySelectorAll('[name="track"], [name="vehicleType"]').forEach(r => r.addEventListener("change", () => {
+  setError("vehicleType", null);
+  syncVehicle();
+}));
 
 // ---------- Photos ----------
 // Photos are shrunk in the browser and stored as JPEG data URLs in Firestore,
@@ -371,9 +422,10 @@ window.addEventListener("pagehide", stopCamera);
 function collect() {
   const f = new FormData(form);
   const val = k => String(f.get(k) || "").trim().replace(/\s+/g, " ");
-  const isCar = val("vehicleType") === "car";
+  const isCar = MOTOR.includes(val("vehicleType"));
+  const track = val("track");
   return {
-    serviceType: val("serviceType"),
+    serviceType: track === "rides" ? "taxi" : track ? "delivery" : "",
     vehicleType: val("vehicleType"),
     carModel: isCar ? val("carModel") : "",
     carYear: isCar ? toLatinDigits(val("carYear")) : "",
@@ -386,9 +438,9 @@ function collect() {
 }
 function validate(d) {
   const e = {};
-  if (!d.serviceType) e.serviceType = "eService";
-  if (!d.vehicleType) e.vehicleType = "eVehicle";
-  if (d.vehicleType === "car") {
+  if (!d.serviceType) e.track = "eService";
+  else if (!d.vehicleType) e.vehicleType = "eVehicle";
+  if (MOTOR.includes(d.vehicleType)) {
     if (!d.carModel) e.carModel = "eRequired";
     const y = Number(d.carYear);
     if (!/^\d{4}$/.test(d.carYear) || y < 1970 || y > new Date().getFullYear() + 1) e.carYear = "eYear";
@@ -402,7 +454,7 @@ function validate(d) {
   if (!/^\+?[0-9]{7,15}$/.test(d.phone)) e.phone = "ePhone";
   if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) e.email = "eEmail";
   for (const k of PHOTO_KEYS) {
-    const optional = d.vehicleType === "bicycle" && LICENCE_KEYS.includes(k);
+    const optional = NO_LICENCE.includes(d.vehicleType) && LICENCE_KEYS.includes(k);
     if (!photos[k] && !optional) e[k] = "ePhoto";
   }
   if (!form.consent.checked) e.consent = "eConsent";
@@ -421,7 +473,7 @@ form.addEventListener("submit", async ev => {
   $("#submitErr").classList.add("hidden");
   const data = collect();
   const found = validate(data);
-  const all = ["serviceType", "vehicleType", "carModel", "carYear", "firstName", "lastName", "fatherName",
+  const all = ["track", "vehicleType", "carModel", "carYear", "firstName", "lastName", "fatherName",
                "birthDate", "birthPlace", "currentAddress", "phone", "email", ...PHOTO_KEYS, "consent"];
   all.forEach(k => setError(k, found[k] || null));
   const first = all.find(k => found[k]);

@@ -31,12 +31,12 @@ service cloud.firestore {
         && request.resource.data.email is string
         && request.resource.data.email.size() <= 120
         && request.resource.data.serviceType in ['taxi', 'delivery', 'both']
-        && request.resource.data.vehicleType in ['car', 'bicycle']
+        && request.resource.data.vehicleType in ['car', 'scooter', 'bicycle', 'ebike']
         && request.resource.data.carModel is string
         && request.resource.data.carModel.size() <= 80
         && request.resource.data.carYear.matches('^([0-9]{4})?$')
-        // A car must come with its model and year.
-        && (request.resource.data.vehicleType != 'car'
+        // A car or scooter must come with its model and year.
+        && (!(request.resource.data.vehicleType in ['car', 'scooter'])
             || (request.resource.data.carModel.size() > 0
                 && request.resource.data.carYear.size() == 4))
         && request.resource.data.lang in ['ar', 'en']
